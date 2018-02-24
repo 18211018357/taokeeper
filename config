@@ -1,0 +1,54 @@
+taokeeper为zookeeper做了什么？
+1.CPU/MEM/LOAD的监控//load
+2. ZK日志目录所在磁盘剩余空间监控
+3. 单机连接数的峰值报警
+4. 单机 Watcher数的峰值报警
+5. 节点自检：是指对集群中每个IP所在ZK节点上的
+PATH: /YINSHI.MONITOR.ALIVE.CHECK 定期进行三次如下流程 : 节点连接 – 数据发布 – 修改通知 – 获取数据 – 数据对比, 在指定的延时内，三次流程均成功视为该节点处于正常状态。
+
+Taokeeper四大线程掌控一切
+测试环境在tomcat上，jsp调用Initialization类，创建四大线程，根据clusterId来获取一个zk集群，开启全局掌控模式。
+1.ClientThroughputStatJob()
+检测链接的数据信息，并放到GlobalInstace
+2. ZooKeeperALiveCheckerJob()
+调用ZooKeeper API链接测试，启动ZooKeeper数据修改通知检测 ，检查节点是否存活
+3. ZooKeeperStatusCollectJob()
+对集群server进行ssh链接,执行命令 echo stat | nc {IP} {PORT}和echo wchs | nc {IP} {PORT}以及echo wchc | nc {IP} {PORT}，将结果封装之后再检查这些数据，是否大于阈值，如果大于就发送错误通知；
+4. HostPerformanceCollectTask()
+收集机器CPU LOAD MEMEORY 负载情况 如果大于设置的值则发送消息
+
+Taokeeper环境搭建
+https://github.com/alibaba/taokeeper/downloads  taokeeper下载路径
+1.下载tomcat，配置系统环境。
+2.下载mysql和taokeeper.sql文件，mysql命令source taokeeper，创建taokeeper使用的数据库。
+3.下载taokeeper-monitor.tar.gz文件，解压到tomcat的webapps目录下，确保最后目录结构如下：%TOMCAT_HOME%\webapps\taokeeper-monitor\WEB-INF
+4.  下载taokeeper-monitor-config.properties[3]文件，存放到一个指定目录，比如：
+/home/xiaoming/taokeeper-monitor/config/taokeeper-monitor-config.properties，其中内容如下，根据需要自己修改下。
+systemInfo.envName=TEST
+#DBCPdbcp.driverClassName=com.mysql.jdbc.Driver
+dbcp.dbJDBCUrl=jdbc:mysql://127.0.0.1:3306/taokeeper//根据个人信息配置
+dbcp.characterEncoding=GBK
+dbcp.username=root
+dbcp.password=123
+dbcp.maxActive=30
+dbcp.maxIdle=10
+dbcp.maxWait=10000
+#SystemConstant
+SystemConstent.dataStoreBasePath=C:/taokeeper-monitor/ZookeeperStore
+#SSH account of zk server
+SystemConstant.userNameOfSSH=rcxu
+SystemConstant.passwordOfSSH=*********
+4. 在tomcat启动脚本中添加JAVA_OPTS:
+windows平台：set JAVA_OPTS=-DconfigFilePath=“D:\server\tomcat\webapps\taokeeper-monitor-config.properties”
+linux平台：JAVA_OPTS=-DconfigFilePath=“/home/xiaoming/taokeeper-monitor/config/taokeeper-monitor-config.properties”
+(JAVA_OPTS变量在catalina.bat/.sh中)
+5. 启动tomcat服务器。
+6. 正常启动后，浏览器中访问即可。Localhost：8080
+
+配置完成，展示功能
+
+
+
+
+
+
